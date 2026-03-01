@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Quiz | ExamFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #111827;
+            --fg: #f1f5f9;
+            --fg-muted: #94a3b8;
+            --accent: #14b8a6;
+            --accent-glow: rgba(20, 184, 166, 0.4);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --sidebar-width: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--fg);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Background Effects */
+        .bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            animation: float 30s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            top: -100px;
+            right: -100px;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            bottom: -100px;
+            left: 30%;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-20px, 20px) scale(1.05); }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 8px 24px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 24px;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: var(--fg-muted);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 15px;
+            position: relative;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--fg);
+        }
+
+        .nav-item.active {
+            background: rgba(20, 184, 166, 0.1);
+            color: var(--accent);
+        }
+
+        .nav-item.active::before {
+            transform: scaleY(1);
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Sticky Header */
+        .quiz-header {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: rgba(10, 15, 26, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quiz-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .quiz-title h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .question-count {
+            font-size: 14px;
+            color: var(--fg-muted);
+        }
+
+        /* Timer */
+        .timer-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .timer-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+
+        .timer-box.warning {
+            border-color: rgba(245, 158, 11, 0.5);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .timer-box.danger {
+            border-color: rgba(239, 68, 68, 0.5);
+            background: rgba(239, 68, 68, 0.1);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .timer-icon {
+            color: var(--fg-muted);
+        }
+
+        .timer-box.warning .timer-icon { color: var(--warning); }
+        .timer-box.danger .timer-icon { color: var(--danger); }
+
+        .timer-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .timer-box.warning .timer-text { color: var(--warning); }
+        .timer-box.danger .timer-text { color: var(--danger); }
+
+        /* Questions Container */
+        .questions-container {
+            flex: 1;
+            padding: 32px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Question Card */
+        .question-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .question-card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .question-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .question-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .question-text {
+            font-size: 17px;
+            line-height: 1.6;
+            padding-top: 6px;
+        }
+
+        /* Options Grid */
+        .options-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .option-item {
+            position: relative;
+        }
+
+        .option-item input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-label:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .option-item input:checked + .option-label {
+            background: rgba(20, 184, 166, 0.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(20, 184, 166, 0.15);
+        }
+
+        .option-item input:focus-visible + .option-label {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .option-marker {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--fg-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .option-item input:checked + .option-label .option-marker {
+            border-color: var(--accent);
+            background: var(--accent);
+        }
+
+        .option-marker::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            transform: scale(0);
+            transition: transform 0.2s ease;
+        }
+
+        .option-item input:checked + .option-label .option-marker::after {
+            transform: scale(1);
+        }
+
+        .option-text {
+            font-size: 15px;
+            color: var(--fg);
+        }
+
+        /* Submit Section */
+        .submit-section {
+            padding: 32px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .submit-btn {
+            padding: 18px 64px;
+            background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px var(--accent-glow);
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+        }
+
+        .retake-btn {
+            padding: 16px 48px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: var(--fg);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .retake-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Mobile Sidebar Toggle */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 60;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            color: var(--fg);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+            .orb { animation: none; }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .sidebar-toggle {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .quiz-header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px;
+            }
+            .questions-container {
+                padding: 16px;
+            }
+            .question-card {
+                padding: 20px;
+            }
+            .question-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .submit-btn {
+                width: 100%;
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background -->
+    <div class="bg-canvas" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <!-- Mobile Toggle -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold">ExamFlow</h2>
+                <p class="text-xs text-slate-400">Student Panel</p>
+            </div>
+        </div>
+
+        <nav class="flex-1">
+            <a href="/student/dashboard" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/student/exam" class="nav-item active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                Exams
+            </a>
+            <a href="/student/top" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                    <polyline points="17 6 23 6 23 12"></polyline>
+                </svg>
+                Top Students
+            </a>
+        </nav>
+
+        <div class="mt-auto pt-4 border-t border-white/10">
+            <a href="/logout" class="nav-item text-rose-400 hover:text-rose-300 hover:bg-rose-500/10">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <!-- Sticky Header with Timer -->
+        <header class="quiz-header">
+            <div class="quiz-title">
+                <h1>Quiz</h1>
+                <span class="question-count">{{ a|length }} Questions</span>
+            </div>
+            <div class="timer-container">
+                <div class="timer-box" id="timerBox">
+                    <svg class="timer-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span class="timer-text" id="time">0:00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Questions -->
+        <form id="quizForm" method="POST" action="">
+            <div class="questions-container">
+{% for i in a %}
+<div class="question-card" style="animation-delay: {{ loop.index * 0.1 }}s;">
+
+    <input type="hidden" name="question_id_{{ loop.index }}" value="{{ i.id }}">
+
+    <div class="question-header">
+        <div class="question-number">{{ loop.index }}</div>
+        <p class="question-text">{{ i.question }}</p>
+    </div>
+
+    <div class="options-grid">
+
+        <div class="option-item">
+            <input type="radio"
+                   name="answer_{{ loop.index }}"
+                   id="q{{ loop.index }}a"
+                   value="A"
+                   required>
+            <label class="option-label" for="q{{ loop.index }}a">
+                <span class="option-marker"></span>
+                <span class="option-text">{{ i.choose_a }}</span>
+            </label>
+        </div>
+
+        <div class="option-item">
+            <input type="radio"
+                   name="answer_{{ loop.index }}"
+                   id="q{{ loop.index }}b"
+                   value="B">
+            <label class="option-label" for="q{{ loop.index }}b">
+                <span class="option-marker"></span>
+                <span class="option-text">{{ i.choose_b }}</span>
+            </label>
+        </div>
+
+        <div class="option-item">
+            <input type="radio"
+                   name="answer_{{ loop.index }}"
+                   id="q{{ loop.index }}c"
+                   value="C">
+            <label class="option-label" for="q{{ loop.index }}c">
+                <span class="option-marker"></span>
+                <span class="option-text">{{ i.choose_c }}</span>
+            </label>
+        </div>
+
+        <div class="option-item">
+            <input type="radio"
+                   name="answer_{{ loop.index }}"
+                   id="q{{ loop.index }}d"
+                   value="D">
+            <label class="option-label" for="q{{ loop.index }}d">
+                <span class="option-marker"></span>
+                <span class="option-text">{{ i.choose_d }}</span>
+            </label>
+        </div>
+
+    </div>
+
+</div>
+{% endfor %}
+            </div>
+
+            <div class="submit-section">
+                <button type="submit" class="submit-btn">Submit Quiz</button>
+            </div>
+        </form>
+
+        <div class="submit-section" style="display: none;" id="retakeSection">
+            <button id="retakeBtn" class="retake-btn">Retake Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== Sidebar Toggle =====
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+            });
+        }
+
+        // ===== Timer =====
+        const totalMinutes = {{ a[0].total_time if a else 1 }};
+        let timeLeft = totalMinutes * 60;
+
+        const timeDisplay = document.getElementById('time');
+        const timerBox = document.getElementById('timerBox');
+        const quizForm = document.getElementById('quizForm');
+        const retakeSection = document.getElementById('retakeSection');
+        const retakeBtn = document.getElementById('retakeBtn');
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timeDisplay.textContent = minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+
+            // Visual warnings
+            timerBox.classList.remove('warning', 'danger');
+            if (timeLeft <= 60) {
+                timerBox.classList.add('danger');
+            } else if (timeLeft <= 180) {
+                timerBox.classList.add('warning');
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                quizForm.submit();
+                retakeSection.style.display = "flex";
+            }
+            timeLeft--;
+        }
+
+        // Initial call and interval
+        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+
+        // ===== Retake Button =====
+        if (retakeBtn) {
+            retakeBtn.addEventListener('click', () => {
+                location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
